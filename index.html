@@ -1,83 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live YouTube Subscriber Counter - Selfishan</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #282c34;
-      color: white;
-      text-align: center;
-      padding: 50px;
-    }
-
-    .counter {
-      font-size: 4rem;
-      margin: 20px;
-    }
-
-    #celebration {
-      font-size: 2rem;
-      color: #ffdf00;
-      display: none;
-    }
-
-    #celebration.active {
-      display: block;
-      animation: party 1s ease-out;
-    }
-
-    @keyframes party {
-      from { transform: scale(1); }
-      to { transform: scale(1.5); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Subscriber Count</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #282c34;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #subscriberCount {
+            font-size: 4em;
+            margin: 20px;
+        }
+        .party {
+            display: none;
+            font-size: 2em;
+            color: gold;
+        }
+    </style>
 </head>
 <body>
+    <h1>Live Subscriber Count for Selfishan</h1>
+    <div id="subscriberCount">Loading...</div>
+    <div id="party" class="party">🎉 Party Time! 🎉</div>
 
-  <h1>Live YouTube Stats for @SELFISHAN</h1>
-  <div id="subscribers" class="counter">Subscribers: Loading...</div>
+    <script>
+        const channelID = "UC1kfdX8x0m-GsL2kYEqwHDg"; // Replace with your channel ID
+        const subscriberCountElement = document.getElementById("subscriberCount");
+        const partyElement = document.getElementById("party");
 
-  <script>
-    let previousSubscribers = 0;
-
-    async function fetchSubscriberCount() {
-      const channelUrl = 'https://www.youtube.com/@SELFISHAN/about'; // URL to your channel's "About" page
-
-      try {
-        const response = await fetch(`https://cors-anywhere.herokuapp.com/${channelUrl}`);
-        const text = await response.text();
-
-        // Extract the subscriber count using regular expressions
-        const regex = /"subscriberCountText":{"simpleText":"(.*?) subscribers"/;
-        const match = text.match(regex);
-
-        if (match && match[1]) {
-          const subscriberCount = parseInt(match[1].replace(/,/g, '')); // Remove commas and parse as integer
-          document.getElementById('subscribers').innerText = `Subscribers: ${subscriberCount}`;
-
-          // Celebration if subscriber count increases
-          if (subscriberCount > previousSubscribers) {
-            document.getElementById('celebration').classList.add('active');
-            setTimeout(() => {
-              document.getElementById('celebration').classList.remove('active');
-            }, 2000);
-          }
-
-          previousSubscribers = subscriberCount;
-        } else {
-          console.error('Could not retrieve subscriber count.');
+        async function fetchSubscriberCount() {
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelID}&key=YOUR_API_KEY`);
+            const data = await response.json();
+            const subscriberCount = data.items[0].statistics.subscriberCount;
+            return subscriberCount;
         }
-      } catch (error) {
-        console.error('Error fetching subscriber data:', error);
-      }
-    }
 
-    // Fetch subscriber count every 10 seconds
-    setInterval(fetchSubscriberCount, 10000);
-  </script>
+        async function updateCount() {
+            const count = await fetchSubscriberCount();
+            subscriberCountElement.textContent = count;
+            partyElement.style.display = 'none'; // Hide party initially
 
+            // Check if the count is updated
+            setInterval(async () => {
+                const newCount = await fetchSubscriberCount();
+                if (newCount > count) {
+                    partyElement.style.display = 'block'; // Show party when count increases
+                    setTimeout(() => {
+                        partyElement.style.display = 'none'; // Hide after 3 seconds
+                    }, 3000);
+                }
+                subscriberCountElement.textContent = newCount;
+                count = newCount;
+            }, 10000); // Check every 10 seconds
+        }
+
+        updateCount();
+    </script>
 </body>
 </html>
